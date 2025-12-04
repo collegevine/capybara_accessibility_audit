@@ -105,7 +105,7 @@ module CapybaraAccessibilityAudit
       puts "Total rules with violations: #{sorted_ignores.keys.count}"
       puts "Total ignored violations: #{sorted_ignores.values.sum(&:count)}"
       puts "\nTo use this baseline:"
-      puts "  config.capybara_accessibility_audit.audit_enabled = { assert_new: '#{output_path}' }"
+      puts "  self.accessibility_audit_report_mode = CapybaraAccessibilityAudit::ReportMode::Assert.new(ignore_file_path: '#{output_path}')"
       puts "\nAs you fix violations, remove the corresponding entries from the ignore file."
       puts "=" * 80 + "\n"
     end

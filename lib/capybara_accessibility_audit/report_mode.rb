@@ -31,10 +31,12 @@ module CapybaraAccessibilityAudit
     # Supports backwards compatibility with accessibility_audit_enabled:
     #   false -> Disabled (backwards compatible with accessibility_audit_enabled = false)
     #   true -> Assert (backwards compatible with accessibility_audit_enabled = true)
-    #   :assert -> Assert (new: explicit assert mode)
-    #   :stdout -> StdoutReporter (new: report to stdout)
-    #   :baseline -> BaselineCollector (new: collect violations for ignore file)
-    #   { file: 'path' } -> FileReporter (new: report to JSON file)
+    #   ReportMode::Assert.new -> Assert mode
+    #   ReportMode::Assert.new(ignore_file_path: 'path') -> Assert mode with ignore file
+    #   ReportMode::StdoutReporter.new -> Report to stdout
+    #   ReportMode::FileReporter.new(output_path: 'path') -> Report to JSON file
+    #   ReportMode::BaselineCollector.new -> Collect violations to default ignore file
+    #   ReportMode::BaselineCollector.new(output_path: 'path') -> Collect violations to custom path
     def self.from_config(mode_config)
       case mode_config
       when false # Backwards compatibility: accessibility_audit_enabled = false
@@ -49,7 +51,7 @@ module CapybaraAccessibilityAudit
         BaselineCollector.new
       when Hash
         if mode_config[:file]
-          FileReporter.new(mode_config[:file])
+          FileReporter.new(output_path: mode_config[:file])
         else
           raise ArgumentError, "Invalid report mode configuration: #{mode_config.inspect}"
         end
@@ -139,9 +141,9 @@ module CapybaraAccessibilityAudit
     class FileReporter < ReportMode
       attr_reader :file_path
 
-      def initialize(file_path)
-        @file_path = file_path
-        Reporter.report_file_path = file_path
+      def initialize(output_path:)
+        @file_path = output_path
+        Reporter.report_file_path = output_path
       end
 
       def report?

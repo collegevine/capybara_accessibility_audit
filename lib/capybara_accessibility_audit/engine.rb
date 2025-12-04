@@ -8,7 +8,7 @@ module CapybaraAccessibilityAudit
       click_link_or_button
       click_on
     ]
-    # audit_enabled accepts: false (disabled), true (assert mode), :assert, :stdout, or { file: 'path' }
+    # audit_enabled accepts: false (disabled), true (assert mode), or ReportMode instances
     config.capybara_accessibility_audit.audit_enabled = true
 
     # Minitest
