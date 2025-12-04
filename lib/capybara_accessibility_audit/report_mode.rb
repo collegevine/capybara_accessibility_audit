@@ -38,6 +38,9 @@ module CapybaraAccessibilityAudit
     #   ReportMode::BaselineCollector.new -> Collect violations to default ignore file
     #   ReportMode::BaselineCollector.new(output_path: 'path') -> Collect violations to custom path
     def self.from_config(mode_config)
+      # If already a ReportMode instance, return it directly
+      return mode_config if mode_config.is_a?(ReportMode)
+
       case mode_config
       when false # Backwards compatibility: accessibility_audit_enabled = false
         Disabled.new
