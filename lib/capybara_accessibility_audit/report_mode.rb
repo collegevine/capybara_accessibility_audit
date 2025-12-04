@@ -2,6 +2,8 @@
 
 module CapybaraAccessibilityAudit
   class ReportMode
+    IGNORE_FILE = "capybara_accessibility_audit.ignore.json"
+
     # Base class for report modes
     def enabled?
       true
@@ -19,12 +21,19 @@ module CapybaraAccessibilityAudit
       raise NotImplementedError
     end
 
+    # Called at the end of the test suite to finalize reporting
+    # Override in subclasses that need end-of-suite behavior
+    def finalize!
+      # Default: do nothing
+    end
+
     # Factory method to create mode from config
     # Supports backwards compatibility with accessibility_audit_enabled:
     #   false -> Disabled (backwards compatible with accessibility_audit_enabled = false)
     #   true -> Assert (backwards compatible with accessibility_audit_enabled = true)
     #   :assert -> Assert (new: explicit assert mode)
     #   :stdout -> StdoutReporter (new: report to stdout)
+    #   :baseline -> BaselineCollector (new: collect violations for ignore file)
     #   { file: 'path' } -> FileReporter (new: report to JSON file)
     def self.from_config(mode_config)
       case mode_config
@@ -36,6 +45,8 @@ module CapybaraAccessibilityAudit
         Assert.new
       when :stdout
         StdoutReporter.new
+      when :baseline
+        BaselineCollector.new
       when Hash
         if mode_config[:file]
           FileReporter.new(mode_config[:file])
@@ -43,7 +54,7 @@ module CapybaraAccessibilityAudit
           raise ArgumentError, "Invalid report mode configuration: #{mode_config.inspect}"
         end
       else
-        raise ArgumentError, "Invalid report mode: #{mode_config.inspect}. Expected false, true, :assert, :stdout, or { file: 'path' }"
+        raise ArgumentError, "Invalid report mode: #{mode_config.inspect}. Expected false, true, :assert, :stdout, :baseline, or { file: 'path' }"
       end
     end
 
@@ -60,14 +71,51 @@ module CapybaraAccessibilityAudit
     end
 
     # Assert mode - fails tests on violations (default behavior)
+    # If capybara_accessibility_audit.ignore.json exists, filters out ignored violations
     class Assert < ReportMode
+      attr_accessor :ignore_file_path
+
+      def initialize(ignore_file_path: IGNORE_FILE)
+        @ignore_file_path = ignore_file_path
+      end
+
       def assert?
         true
       end
 
       def handle_violations(audit:, url:)
-        # Return the failure message to be used in assert
-        audit.failure_message
+        # If ignore file exists, filter violations
+        if File.exist?(ignore_file_path)
+          require_relative "violation_ignore_list"
+          ignore_list = ViolationIgnoreList.new(ignore_file_path)
+          filtered_violations = ignore_list.filter_violations(audit.results.violations)
+
+          # If all violations were filtered, don't fail the test
+          return nil if filtered_violations.empty?
+
+          # Build a custom failure message with only new violations
+          build_failure_message(filtered_violations)
+        else
+          # No ignore file, use default behavior
+          audit.failure_message
+        end
+      end
+
+      private
+
+      def build_failure_message(violations)
+        message = ["Found new accessibility violations"]
+
+        violations.each do |violation|
+          message << "\n\n#{violation.help} (#{violation.id})"
+          message << "  #{violation.helpUrl}"
+          message << "  Affected elements (#{violation.nodes.count}):"
+          violation.nodes.each do |node|
+            message << "    #{node.target.join(", ")}"
+          end
+        end
+
+        message.join("\n")
       end
     end
 
@@ -78,8 +126,12 @@ module CapybaraAccessibilityAudit
       end
 
       def handle_violations(audit:, url:)
-        Reporter.add_violation(url: url, audit: audit)
+        Reporter.add_violation(audit: audit, url: url)
         nil # Don't fail the test
+      end
+
+      def finalize!
+        Reporter.report_to_stdout!
       end
     end
 
@@ -97,8 +149,39 @@ module CapybaraAccessibilityAudit
       end
 
       def handle_violations(audit:, url:)
-        Reporter.add_violation(url: url, audit: audit)
+        Reporter.add_violation(audit: audit, url: url)
         nil # Don't fail the test
+      end
+
+      def finalize!
+        Reporter.report_to_json!(file_path)
+      end
+    end
+
+    # Baseline mode - collects violations and generates ignore file
+    # Use this to create the initial capybara_accessibility_audit.ignore.json
+    class BaselineCollector < ReportMode
+      attr_accessor :output_path
+
+      def initialize(output_path: IGNORE_FILE)
+        @output_path = output_path
+      end
+
+      def report?
+        true
+      end
+
+      def handle_violations(audit:, url:)
+        Reporter.add_violation(audit: audit, url: url)
+        nil # Don't fail the test
+      end
+
+      def finalize!
+        require_relative "violation_ignore_list"
+        ViolationIgnoreList.generate_baseline(
+          violations: Reporter.violations,
+          output_path: output_path
+        )
       end
     end
   end

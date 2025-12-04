@@ -16,7 +16,7 @@ module CapybaraAccessibilityAudit
       @violations ||= []
     end
 
-    def self.add_violation(url:, audit:, timestamp: Time.now)
+    def self.add_violation(audit:, url:, timestamp: Time.now)
       violation_data = {
         url: url,
         timestamp: timestamp.iso8601,

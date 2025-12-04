@@ -42,7 +42,11 @@ module CapybaraAccessibilityAudit
           config.before(type: :feature, &configure)
 
           config.after(:suite) do
-            Reporter.report!
+            # Call finalize! on the report mode to handle end-of-suite logic
+            if defined?(CapybaraAccessibilityAudit::AuditSystemTestExtensions)
+              report_mode = CapybaraAccessibilityAudit::AuditSystemTestExtensions.accessibility_audit_report_mode
+              report_mode&.finalize!
+            end
           end
         end
       end
@@ -52,7 +56,11 @@ module CapybaraAccessibilityAudit
     config.after_initialize do
       if defined?(Minitest)
         Minitest.after_run do
-          Reporter.report!
+          # Call finalize! on the report mode to handle end-of-suite logic
+          if defined?(ActionDispatch::SystemTestCase)
+            report_mode = ActionDispatch::SystemTestCase.accessibility_audit_report_mode
+            report_mode&.finalize!
+          end
         end
       end
     end

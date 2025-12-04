@@ -1,0 +1,22 @@
+{
+  "generated_at": "2025-12-04T18:20:43+01:00",
+  "description": "Baseline accessibility violations to be ignored. Remove entries as violations are fixed.",
+  "ignored_violations": {
+    "image-alt": [
+      {
+        "html": "<img src=\"https://example.com\">",
+        "target": [
+          "img"
+        ]
+      }
+    ],
+    "label": [
+      {
+        "html": "<input>",
+        "target": [
+          "input"
+        ]
+      }
+    ]
+  }
+}
