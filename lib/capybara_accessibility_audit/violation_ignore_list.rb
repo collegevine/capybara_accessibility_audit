@@ -7,8 +7,8 @@ module CapybaraAccessibilityAudit
   #
   # The ignore list allows teams to introduce accessibility auditing into existing
   # codebases with many violations. Violations can be ignored by:
-  # - Rule ID only (ignores all violations of that rule across all pages)
-  # - Rule ID + URL + target selector (ignores specific element on specific page)
+  #
+  # - Rule ID + HTML snippet + target selector (ignores specific element on specific page)
   class ViolationIgnoreList
     attr_reader :file_path
 
@@ -17,20 +17,16 @@ module CapybaraAccessibilityAudit
       @ignores = load_ignores
     end
 
-    # Check if a violation should be ignored
-    # html: optional - if provided, will check against ignore entry html (if present)
-    def ignored?(rule_id:, html: nil, target: nil)
+    def ignored?(rule_id:, html:, target:)
+
       rule_ignores = @ignores[rule_id.to_s]
       return false unless rule_ignores
 
-      # If rule is globally ignored (no specific targets/htmls)
       return true if rule_ignores.empty?
 
-      # Check for specific matches
-      # HTML matching: if ignore entry has html, it must match; if no html in entry, matches any page
-      # Target matching: if ignore entry has target, it must match; if no target in entry, matches any element
       rule_ignores.any? do |ignore_entry|
-        matches_html?(ignore_entry, html) && matches_target?(ignore_entry, target)
+        matches_html?(ignore_entry, html) &&
+        matches_target?(ignore_entry, target)
       end
     end
 
@@ -45,10 +41,8 @@ module CapybaraAccessibilityAudit
           )
         end
 
-        # If all nodes were filtered out, skip this violation entirely
         next if filtered_nodes.empty?
 
-        # Return a modified violation with only non-ignored nodes
         OpenStruct.new(
           id: violation.id,
           impact: violation.impact,
@@ -123,19 +117,14 @@ module CapybaraAccessibilityAudit
     end
 
     def matches_html?(ignore_entry, html)
-      # If no HTML in ignore entry, it matches any page
       return true unless ignore_entry["html"]
 
-      # If HTML is in ignore entry, it must match exactly
       ignore_entry["html"] == html
     end
 
     def matches_target?(ignore_entry, target)
-      # If no target in ignore entry, it matches any element
       return true unless ignore_entry["target"]
 
-      # If target is in ignore entry, it must match exactly
-      # Target is an array of selectors, compare as arrays
       ignore_entry["target"] == target
     end
   end

@@ -17,34 +17,15 @@ module CapybaraAccessibilityAudit
       class_attribute :accessibility_audit_after_methods, default: Set.new
       class_attribute :accessibility_audit_options, default: ActiveSupport::OrderedOptions.new
 
-      # Store the actual value internally
-      class_attribute :_accessibility_audit_enabled_value, default: true
-
-      # Internal accessor for report mode - converts accessibility_audit_enabled to ReportMode
-      def self.accessibility_audit_report_mode
-        @accessibility_audit_report_mode ||= ReportMode.from_config(_accessibility_audit_enabled_value)
-      end
-
-      def self.accessibility_audit_report_mode=(mode)
-        @accessibility_audit_report_mode = mode.is_a?(ReportMode) ? mode : ReportMode.from_config(mode)
-      end
-
-      def accessibility_audit_report_mode
-        self.class.accessibility_audit_report_mode
-      end
-
-      def accessibility_audit_report_mode=(mode)
-        self.class.accessibility_audit_report_mode = mode
-      end
-
       # Public accessors for backwards compatibility
+      # These now just update the global report mode
       def self.accessibility_audit_enabled=(value)
-        @accessibility_audit_report_mode = nil  # Clear cache
-        self._accessibility_audit_enabled_value = value
+        mode = value.is_a?(ReportMode) ? value : ReportMode.from_config(value)
+        Reporter.report_mode = mode
       end
 
       def self.accessibility_audit_enabled
-        accessibility_audit_report_mode.enabled?
+        Reporter.report_mode&.enabled? || false
       end
 
       def accessibility_audit_enabled=(value)
@@ -53,6 +34,10 @@ module CapybaraAccessibilityAudit
 
       def accessibility_audit_enabled
         self.class.accessibility_audit_enabled
+      end
+
+      def accessibility_audit_report_mode
+        Reporter.report_mode
       end
 
       MODAL_METHODS.each do |method|

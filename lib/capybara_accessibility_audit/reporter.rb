@@ -76,6 +76,11 @@ module CapybaraAccessibilityAudit
 
     class << self
       attr_accessor :report_file_path
+      attr_accessor :report_mode
+    end
+
+    def self.finalize!
+      report_mode&.finalize!
     end
 
     private_class_method def self.violation_to_hash(rule)

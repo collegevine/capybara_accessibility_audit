@@ -32,6 +32,14 @@ module CapybaraAccessibilityAudit
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :system
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :feature
 
+          # Set the global report mode once
+          config.before(:suite) do
+            report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(
+              app.config.capybara_accessibility_audit.audit_enabled
+            )
+            CapybaraAccessibilityAudit::Reporter.report_mode = report_mode
+          end
+
           configure = proc do
             self.accessibility_audit_enabled = app.config.capybara_accessibility_audit.audit_enabled
 
@@ -42,12 +50,7 @@ module CapybaraAccessibilityAudit
           config.before(type: :feature, &configure)
 
           config.after(:suite) do
-            # Call finalize! on the report mode to handle end-of-suite logic
-            # We need to find an included class to access the report mode
-            # RSpec's system and feature specs include AuditSystemTestExtensions
-            report_mode = app.config.capybara_accessibility_audit.audit_enabled
-            report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(report_mode)
-            report_mode&.finalize!
+            CapybaraAccessibilityAudit::Reporter.finalize!
           end
         end
       end
@@ -56,11 +59,14 @@ module CapybaraAccessibilityAudit
     # Minitest
     config.after_initialize do |app|
       if defined?(Minitest)
+        # Set the global report mode once
+        report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(
+          app.config.capybara_accessibility_audit.audit_enabled
+        )
+        CapybaraAccessibilityAudit::Reporter.report_mode = report_mode
+
         Minitest.after_run do
-          # Call finalize! on the report mode to handle end-of-suite logic
-          report_mode = app.config.capybara_accessibility_audit.audit_enabled
-          report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(report_mode)
-          report_mode&.finalize!
+          CapybaraAccessibilityAudit::Reporter.finalize!
         end
       end
     end

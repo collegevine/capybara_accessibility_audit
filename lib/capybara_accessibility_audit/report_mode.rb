@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "uri"
+require_relative "violation_ignore_list"
+
 module CapybaraAccessibilityAudit
   class ReportMode
     IGNORE_FILE = "capybara_accessibility_audit.ignore.json"
@@ -77,38 +80,60 @@ module CapybaraAccessibilityAudit
       end
 
       def handle_violations(audit:, url:)
-        # If ignore file exists, filter violations
-        if File.exist?(ignore_file_path)
-          require_relative "violation_ignore_list"
-          ignore_list = ViolationIgnoreList.new(ignore_file_path)
-          filtered_violations = ignore_list.filter_violations(audit.results.violations)
+        # Revisit by checking file once
+        return audit.failure_message unless File.exist?(ignore_file_path)
 
-          # If all violations were filtered, don't fail the test
-          return nil if filtered_violations.empty?
+        ignore_list = ViolationIgnoreList.new(ignore_file_path)
+        filtered_violations = ignore_list.filter_violations(audit.results.violations)
 
-          # Build a custom failure message with only new violations
-          build_failure_message(filtered_violations)
-        else
-          # No ignore file, use default behavior
-          audit.failure_message
-        end
+        return nil if filtered_violations.empty?
+
+        build_failure_message(
+          violations: filtered_violations,
+          url: url
+        )
       end
 
       private
 
-      def build_failure_message(violations)
+      def build_failure_message(violations:, url:)
         message = ["Found new accessibility violations"]
+        message << "\nPath: #{strip_url_prefix(url)}"
 
         violations.each do |violation|
-          message << "\n\n#{violation.help} (#{violation.id})"
-          message << "  #{violation.helpUrl}"
-          message << "  Affected elements (#{violation.nodes.count}):"
+          message << "\nRule ID: #{violation.id}"
+          message << "#{"-" * 80}"
+          message << "#{violation.help}"
+          message << "#{violation.helpUrl}"
+
+          message << "\nAffected elements (#{violation.nodes.count}):\n"
           violation.nodes.each do |node|
-            message << "    #{node.target.join(", ")}"
+            message << "  #{node.target.join(" ")}"
           end
+
+          message << "\nIMPORTANT: If these are false positives, ignore them by"
+          message << "adding this to the ignore file and posting in the"
+          message<< "#i-wcag-accessibility Slack channel:"
+          message << "File: #{@ignore_file_path}"
+          message << "JSON path: `$.ignored_violations.#{violation.id}`\n"
+          ignore_directives = []
+          violation.nodes.each do |node|
+            ignore_directives << JSON.pretty_generate(
+              {
+                "html" => node.html,
+                "target" => node.target
+              }
+            ).gsub(/^/, " " * 4)
+          end
+          message << ignore_directives.join(",\n")
         end
 
         message.join("\n")
+      end
+
+      def strip_url_prefix(url)
+        uri = URI(url)
+        uri.request_uri + (uri.fragment ? "##{uri.fragment}" : "")
       end
     end
 
