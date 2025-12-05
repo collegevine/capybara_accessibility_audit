@@ -43,24 +43,24 @@ module CapybaraAccessibilityAudit
 
           config.after(:suite) do
             # Call finalize! on the report mode to handle end-of-suite logic
-            if defined?(CapybaraAccessibilityAudit::AuditSystemTestExtensions)
-              report_mode = CapybaraAccessibilityAudit::AuditSystemTestExtensions.accessibility_audit_report_mode
-              report_mode&.finalize!
-            end
+            # We need to find an included class to access the report mode
+            # RSpec's system and feature specs include AuditSystemTestExtensions
+            report_mode = app.config.capybara_accessibility_audit.audit_enabled
+            report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(report_mode)
+            report_mode&.finalize!
           end
         end
       end
     end
 
     # Minitest
-    config.after_initialize do
+    config.after_initialize do |app|
       if defined?(Minitest)
         Minitest.after_run do
           # Call finalize! on the report mode to handle end-of-suite logic
-          if defined?(ActionDispatch::SystemTestCase)
-            report_mode = ActionDispatch::SystemTestCase.accessibility_audit_report_mode
-            report_mode&.finalize!
-          end
+          report_mode = app.config.capybara_accessibility_audit.audit_enabled
+          report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(report_mode)
+          report_mode&.finalize!
         end
       end
     end

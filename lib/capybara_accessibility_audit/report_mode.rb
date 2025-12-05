@@ -46,20 +46,8 @@ module CapybaraAccessibilityAudit
         Disabled.new
       when true # Backwards compatibility: accessibility_audit_enabled = true
         Assert.new
-      when :assert
-        Assert.new
-      when :stdout
-        StdoutReporter.new
-      when :baseline
-        BaselineCollector.new
-      when Hash
-        if mode_config[:file]
-          FileReporter.new(output_path: mode_config[:file])
-        else
-          raise ArgumentError, "Invalid report mode configuration: #{mode_config.inspect}"
-        end
       else
-        raise ArgumentError, "Invalid report mode: #{mode_config.inspect}. Expected false, true, :assert, :stdout, :baseline, or { file: 'path' }"
+        raise ArgumentError, "Invalid report mode: #{mode_config.inspect}. Expected true, false, or a ReportMode instance"
       end
     end
 
