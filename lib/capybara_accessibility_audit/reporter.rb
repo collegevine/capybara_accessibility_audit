@@ -231,14 +231,15 @@ module CapybaraAccessibilityAudit
         message << "\nPath: #{strip_url_prefix(url)}"
 
         violations.each do |violation|
-          message << "\nRule ID: #{violation.id}"
-          message << "#{"-" * 80}"
-          message << "#{violation.help}"
+          message << "\n#{violation.id}: #{violation.help} (#{violation.impact})"
           message << "#{violation.helpUrl}"
 
-          message << "\nAffected elements (#{violation.nodes.count}):\n"
+          message << "\n#{violation.failureSummary}"
+
+          message << "\nAffected nodes (#{violation.nodes.count}):\n"
           violation.nodes.each do |node|
-            message << "  #{node.target.join(" ")}"
+            message << "  HTML: #{node.html}"
+            message << "  Selector: #{node.target.join(" ")}"
           end
 
           message << "\nIMPORTANT: If these are false positives, ignore them by"
