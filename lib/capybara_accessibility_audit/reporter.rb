@@ -242,9 +242,9 @@ module CapybaraAccessibilityAudit
             message << "\n  #{node.failureSummary.to_s.split("\n  ").join("\n  - ")}"
           end
 
-          message << "\nIMPORTANT: If these are false positives, ignore them by adding this to"
+          message << "\n#{@custom_help_message}" if @custom_help_message && @custom_help_message != ''
+          message << "\nIf these are false positives, ignore them by adding this to"
           message << "the ignore file:"
-          message << "\n  #{@custom_help_message.split("\n").join("\n  ")}" if @custom_help_message && @custom_help_message != ''
           message << "\n  File: #{@ignore_file_path}"
           message << "  JSON path: `$.ignored_violations.#{violation.id}`\n"
           ignore_directives = []
