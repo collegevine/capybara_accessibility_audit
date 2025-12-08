@@ -32,14 +32,6 @@ module CapybaraAccessibilityAudit
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :system
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :feature
 
-          # Configure reporter once for the suite
-          config.before(:suite) do
-            reporter = CapybaraAccessibilityAudit::Reporter.from_config(
-              app.config.capybara_accessibility_audit.audit_enabled
-            )
-            CapybaraAccessibilityAudit::Reporter.current = reporter
-          end
-
           configure = proc do
             self.accessibility_audit_enabled = app.config.capybara_accessibility_audit.audit_enabled
 

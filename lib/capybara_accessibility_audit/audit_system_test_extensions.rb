@@ -22,6 +22,8 @@ module CapybaraAccessibilityAudit
       def self.accessibility_audit_enabled=(value)
         reporter = value.is_a?(Reporter) ? value : Reporter.from_config(value)
         self.accessibility_audit_reporter = reporter
+        # Also update the global current reporter so finalize_current! works correctly
+        Reporter.current = reporter
       end
 
       def self.accessibility_audit_enabled
