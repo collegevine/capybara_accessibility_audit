@@ -7,7 +7,7 @@ require_relative "violation_ignore_list"
 
 module CapybaraAccessibilityAudit
   class Reporter
-    IGNORE_FILE = "capybara_accessibility_audit.ignore.json"
+    DEFAULT_IGNORE_FILE_PATH = "capybara_accessibility_audit.ignore.json"
     IMPACT_PRIORITY = {
       "critical" => 4,
       "serious" => 3,
@@ -200,7 +200,7 @@ module CapybaraAccessibilityAudit
     class Assert < Reporter
       attr_accessor :ignore_file_path
 
-      def initialize(ignore_file_path: IGNORE_FILE)
+      def initialize(ignore_file_path: DEFAULT_IGNORE_FILE_PATH)
         # Don't call super - no @violations needed for assert mode
         @ignore_file_path = ignore_file_path
       end
@@ -345,7 +345,7 @@ module CapybaraAccessibilityAudit
     class BaselineCollector < Reporter
       attr_accessor :output_path
 
-      def initialize(output_path: IGNORE_FILE)
+      def initialize(output_path: DEFAULT_IGNORE_FILE_PATH)
         super() # Initialize @violations = []
         @output_path = output_path
       end
