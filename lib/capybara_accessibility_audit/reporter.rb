@@ -227,26 +227,24 @@ module CapybaraAccessibilityAudit
       private
 
       def build_failure_message(violations:, url:)
-        message = ["Found new accessibility violations"]
+        message = ["Found new accessibility violations:"]
         message << "\nPath: #{strip_url_prefix(url)}"
 
         violations.each do |violation|
           message << "\n#{violation.id}: #{violation.help} (#{violation.impact})"
           message << "#{violation.helpUrl}"
 
-          message << "\n#{violation.failureSummary}"
-
           message << "\nAffected nodes (#{violation.nodes.count}):\n"
           violation.nodes.each do |node|
             message << "  HTML: #{node.html}"
             message << "  Selector: #{node.target.join(" ")}"
+            message << "\n  #{node.failureSummary.to_s.split("\n  ").join("\n  - ")}"
           end
 
-          message << "\nIMPORTANT: If these are false positives, ignore them by"
-          message << "adding this to the ignore file and posting in the"
-          message << "#i-wcag-accessibility Slack channel:"
-          message << "File: #{@ignore_file_path}"
-          message << "JSON path: `$.ignored_violations.#{violation.id}`\n"
+          message << "\nIMPORTANT: If these are false positives, ignore them by adding this to"
+          message << "the ignore file:"
+          message << "\n  File: #{@ignore_file_path}"
+          message << "  JSON path: `$.ignored_violations.#{violation.id}`\n"
           ignore_directives = []
           violation.nodes.each do |node|
             ignore_directives << JSON.pretty_generate(
