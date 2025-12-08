@@ -10,13 +10,12 @@ class BaselineTest < ApplicationSystemTestCase
   def setup
     super
     # Configure baseline mode with custom output path
-    self.accessibility_audit_report_mode = CapybaraAccessibilityAudit::ReportMode::BaselineCollector.new(
+    self.accessibility_audit_reporter = CapybaraAccessibilityAudit::Reporter::BaselineCollector.new(
       output_path: TEMP_IGNORE_FILE
     )
 
     # Clean up from previous runs
     File.delete(TEMP_IGNORE_FILE) if File.exist?(TEMP_IGNORE_FILE)
-    CapybaraAccessibilityAudit::Reporter.clear!
   end
 
   test "generates baseline and filters known violations" do
@@ -28,7 +27,7 @@ class BaselineTest < ApplicationSystemTestCase
     assert_selector "h1", text: "image-alt"
 
     # Step 2: Finalize to generate the baseline ignore file
-    accessibility_audit_report_mode.finalize!
+    accessibility_audit_reporter.finalize!
 
     assert File.exist?(TEMP_IGNORE_FILE), "Baseline ignore file should be generated"
 
@@ -57,7 +56,7 @@ class BaselineTest < ApplicationSystemTestCase
     assert generated["ignored_violations"]["image-alt"], "Should have image-alt rule"
 
     # Step 3: Switch to assert mode with the generated baseline
-    self.accessibility_audit_report_mode = CapybaraAccessibilityAudit::ReportMode::Assert.new(
+    self.accessibility_audit_reporter = CapybaraAccessibilityAudit::Reporter::Assert.new(
       ignore_file_path: TEMP_IGNORE_FILE
     )
 

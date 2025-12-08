@@ -9,7 +9,7 @@ class AssertWithIgnoreTest < ApplicationSystemTestCase
 
     # Use assert mode with the golden baseline file
     # This file contains label and image-alt violations
-    self.accessibility_audit_report_mode = CapybaraAccessibilityAudit::ReportMode::Assert.new(
+    self.accessibility_audit_reporter = CapybaraAccessibilityAudit::Reporter::Assert.new(
       ignore_file_path: GOLDEN_FILE
     )
   end

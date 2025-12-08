@@ -8,7 +8,7 @@ module CapybaraAccessibilityAudit
       click_link_or_button
       click_on
     ]
-    # audit_enabled accepts: false (disabled), true (assert mode), or ReportMode instances
+    # audit_enabled accepts: false (disabled), true (assert mode), or Reporter instances
     config.capybara_accessibility_audit.audit_enabled = true
 
     # Minitest
@@ -32,12 +32,12 @@ module CapybaraAccessibilityAudit
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :system
           config.include CapybaraAccessibilityAudit::AuditSystemTestExtensions, type: :feature
 
-          # Set the global report mode once
+          # Configure reporter once for the suite
           config.before(:suite) do
-            report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(
+            reporter = CapybaraAccessibilityAudit::Reporter.from_config(
               app.config.capybara_accessibility_audit.audit_enabled
             )
-            CapybaraAccessibilityAudit::Reporter.report_mode = report_mode
+            CapybaraAccessibilityAudit::Reporter.current = reporter
           end
 
           configure = proc do
@@ -50,23 +50,23 @@ module CapybaraAccessibilityAudit
           config.before(type: :feature, &configure)
 
           config.after(:suite) do
-            CapybaraAccessibilityAudit::Reporter.finalize!
+            CapybaraAccessibilityAudit::Reporter.finalize_current!
           end
         end
       end
     end
 
-    # Minitest
+    # Minitest after_run hook
     config.after_initialize do |app|
       if defined?(Minitest)
-        # Set the global report mode once
-        report_mode = CapybaraAccessibilityAudit::ReportMode.from_config(
+        # Configure reporter for Minitest
+        reporter = CapybaraAccessibilityAudit::Reporter.from_config(
           app.config.capybara_accessibility_audit.audit_enabled
         )
-        CapybaraAccessibilityAudit::Reporter.report_mode = report_mode
+        CapybaraAccessibilityAudit::Reporter.current = reporter
 
         Minitest.after_run do
-          CapybaraAccessibilityAudit::Reporter.finalize!
+          CapybaraAccessibilityAudit::Reporter.finalize_current!
         end
       end
     end
