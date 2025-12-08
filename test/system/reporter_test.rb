@@ -3,7 +3,7 @@ require "json"
 require "tempfile"
 
 class ReporterStdoutTest < ApplicationSystemTestCase
-  self.accessibility_audit_enabled = :stdout
+  self.accessibility_audit_enabled = CapybaraAccessibilityAudit::ReportMode::StdoutReporter.new
 
   setup do
     CapybaraAccessibilityAudit::Reporter.clear!
@@ -51,7 +51,7 @@ class ReporterJsonFileTest < ApplicationSystemTestCase
     CapybaraAccessibilityAudit::Reporter.clear!
     @temp_file = Tempfile.new(["accessibility_violations", ".json"])
     @temp_file.close
-    self.accessibility_audit_enabled = {file: @temp_file.path}
+    self.accessibility_audit_enabled = CapybaraAccessibilityAudit::ReportMode::FileReporter.new(output_path: @temp_file.path)
   end
 
   teardown do
