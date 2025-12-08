@@ -16,13 +16,17 @@ module CapybaraAccessibilityAudit
     }
 
     # Class-level current reporter for finalization (SimpleCov pattern)
-    class << self
-      attr_accessor :current
+    def self.current
+      @current
+    end
 
-      def finalize_current!
-        current&.finalize!
-        @current = nil
-      end
+    def self.current=(reporter)
+      @current = reporter
+    end
+
+    def self.finalize_current!
+      current&.finalize!
+      @current = nil
     end
 
     attr_reader :violations
