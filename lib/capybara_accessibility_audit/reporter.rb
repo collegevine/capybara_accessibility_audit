@@ -200,9 +200,10 @@ module CapybaraAccessibilityAudit
     class Assert < Reporter
       attr_accessor :ignore_file_path
 
-      def initialize(ignore_file_path: DEFAULT_IGNORE_FILE_PATH)
+      def initialize(ignore_file_path: DEFAULT_IGNORE_FILE_PATH, custom_help_message: nil)
         # Don't call super - no @violations needed for assert mode
         @ignore_file_path = ignore_file_path
+        @custom_help_message = custom_help_message
       end
 
       def assert?
@@ -243,6 +244,7 @@ module CapybaraAccessibilityAudit
 
           message << "\nIMPORTANT: If these are false positives, ignore them by adding this to"
           message << "the ignore file:"
+          message << "\n  #{@custom_help_message}" if @custom_help_message && @custom_help_message != ''
           message << "\n  File: #{@ignore_file_path}"
           message << "  JSON path: `$.ignored_violations.#{violation.id}`\n"
           ignore_directives = []
