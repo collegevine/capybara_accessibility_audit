@@ -39,4 +39,44 @@ namespace :capybara_accessibility_audit do
       exit 1
     end
   end
+
+  desc "Merge multiple baseline ignore list files into a single ignore list"
+  task :merge_ignores, [:output, :pattern] => :environment do |_t, args|
+    require "capybara_accessibility_audit/ignore_list_merger"
+
+    unless args[:output]
+      puts "Error: output path is required"
+      puts "Usage: rake capybara_accessibility_audit:merge_ignores[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
+      exit 1
+    end
+
+    unless args[:pattern]
+      puts "Error: pattern is required"
+      puts "Usage: rake capybara_accessibility_audit:merge_ignores[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
+      exit 1
+    end
+
+    ignore_files = Dir.glob(args[:pattern])
+
+    if ignore_files.empty?
+      puts "Error: No ignore files found matching pattern: #{args[:pattern]}"
+      exit 1
+    end
+
+    puts "Merging #{ignore_files.count} ignore list#{"s" if ignore_files.count != 1}:"
+    ignore_files.each { |f| puts "  - #{f}" }
+
+    begin
+      CapybaraAccessibilityAudit::IgnoreListMerger.merge(
+        ignore_paths: ignore_files,
+        output_path: args[:output]
+      )
+
+      puts "\nMerge complete!"
+    rescue => e
+      puts "\nError merging ignore lists: #{e.message}"
+      puts e.backtrace.first(5).map { |line| "  #{line}" } if ENV["DEBUG"]
+      exit 1
+    end
+  end
 end
