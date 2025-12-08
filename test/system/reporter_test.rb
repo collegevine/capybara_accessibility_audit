@@ -46,7 +46,7 @@ class ReporterJsonFileTest < ApplicationSystemTestCase
   setup do
     @temp_file = Tempfile.new(["accessibility_violations", ".json"])
     @temp_file.close
-    self.accessibility_audit_enabled = CapybaraAccessibilityAudit::Reporter::File.new(output_path: @temp_file.path)
+    self.accessibility_audit_enabled = CapybaraAccessibilityAudit::Reporter::JSONFile.new(output_path: @temp_file.path)
   end
 
   teardown do

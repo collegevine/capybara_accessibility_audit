@@ -61,7 +61,7 @@ module CapybaraAccessibilityAudit
     #   Reporter::Assert.new -> Assert mode
     #   Reporter::Assert.new(ignore_file_path: 'path') -> Assert mode with ignore file
     #   Reporter::Stdout.new -> Report to stdout
-    #   Reporter::File.new(output_path: 'path') -> Report to JSON file
+    #   Reporter::JSONFile.new(output_path: 'path') -> Report to JSON file
     #   Reporter::BaselineCollector.new -> Collect violations to default ignore file
     #   Reporter::BaselineCollector.new(output_path: 'path') -> Collect violations to custom path
     def self.from_config(reporter_config)
@@ -307,8 +307,8 @@ module CapybaraAccessibilityAudit
       end
     end
 
-    # File reporter - collects and outputs to JSON
-    class File < Reporter
+    # JSON file reporter - collects and outputs to JSON
+    class JSONFile < Reporter
       attr_reader :file_path
 
       def initialize(output_path:)
