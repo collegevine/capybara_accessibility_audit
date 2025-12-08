@@ -1,11 +1,11 @@
 namespace :capybara_accessibility_audit do
   desc "Merge multiple JSON accessibility audit reports into a single report"
-  task :merge, [:output, :pattern] => :environment do |_t, args|
+  task :'merge-reports', [:output, :pattern] => :environment do |_t, args|
     require "capybara_accessibility_audit/report_merger"
 
     unless args[:output]
       puts "Error: output path is required"
-      puts "Usage: rake capybara_accessibility_audit:merge[output.json,reports/*.json]"
+      puts "Usage: rake capybara_accessibility_audit:merge-reports[output.json,reports/*.json]"
       exit 1
     end
 
@@ -41,18 +41,18 @@ namespace :capybara_accessibility_audit do
   end
 
   desc "Merge multiple baseline ignore list files into a single ignore list"
-  task :merge_ignores, [:output, :pattern] => :environment do |_t, args|
+  task :'merge-ignore-files', [:output, :pattern] => :environment do |_t, args|
     require "capybara_accessibility_audit/ignore_list_merger"
 
     unless args[:output]
       puts "Error: output path is required"
-      puts "Usage: rake capybara_accessibility_audit:merge_ignores[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
+      puts "Usage: rake capybara_accessibility_audit:merge-ignore-files[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
       exit 1
     end
 
     unless args[:pattern]
       puts "Error: pattern is required"
-      puts "Usage: rake capybara_accessibility_audit:merge_ignores[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
+      puts "Usage: rake capybara_accessibility_audit:merge-ignore-files[capybara_accessibility_audit.ignore.json,'tmp/*.ignore.json']"
       exit 1
     end
 
