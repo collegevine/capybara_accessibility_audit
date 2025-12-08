@@ -237,8 +237,8 @@ module CapybaraAccessibilityAudit
 
           message << "\nAffected nodes (#{violation.nodes.count}):\n"
           violation.nodes.each do |node|
-            message << "  HTML: #{node.html}"
             message << "  Selector: #{node.target.join(" ")}"
+            message << "  HTML: #{node.html}"
             message << "\n  #{node.failureSummary.to_s.split("\n  ").join("\n  - ")}"
           end
 
@@ -254,7 +254,7 @@ module CapybaraAccessibilityAudit
                 "html" => node.html,
                 "target" => node.target
               }
-            ).gsub(/^/, " " * 4)
+            ).gsub(/^/, " " * 2)
           end
           message << ignore_directives.join(",\n")
         end
