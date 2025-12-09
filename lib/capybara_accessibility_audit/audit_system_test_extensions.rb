@@ -1,5 +1,4 @@
 require "axe/matchers/be_axe_clean"
-require_relative "report_mode"
 require_relative "reporter"
 
 module CapybaraAccessibilityAudit
@@ -17,34 +16,18 @@ module CapybaraAccessibilityAudit
       class_attribute :accessibility_audit_after_methods, default: Set.new
       class_attribute :accessibility_audit_options, default: ActiveSupport::OrderedOptions.new
 
-      # Store the actual value internally
-      class_attribute :_accessibility_audit_enabled_value, default: true
+      # Public accessors
+      class_attribute :accessibility_audit_reporter
 
-      # Internal accessor for report mode - converts accessibility_audit_enabled to ReportMode
-      def self.accessibility_audit_report_mode
-        @accessibility_audit_report_mode ||= ReportMode.from_config(_accessibility_audit_enabled_value)
-      end
-
-      def self.accessibility_audit_report_mode=(mode)
-        @accessibility_audit_report_mode = mode.is_a?(ReportMode) ? mode : ReportMode.from_config(mode)
-      end
-
-      def accessibility_audit_report_mode
-        self.class.accessibility_audit_report_mode
-      end
-
-      def accessibility_audit_report_mode=(mode)
-        self.class.accessibility_audit_report_mode = mode
-      end
-
-      # Public accessors for backwards compatibility
       def self.accessibility_audit_enabled=(value)
-        @accessibility_audit_report_mode = nil  # Clear cache
-        self._accessibility_audit_enabled_value = value
+        reporter = value.is_a?(Reporter) ? value : Reporter.from_config(value)
+        self.accessibility_audit_reporter = reporter
+        # Also update the global current reporter so finalize_current! works correctly
+        Reporter.current = reporter
       end
 
       def self.accessibility_audit_enabled
-        accessibility_audit_report_mode.enabled?
+        accessibility_audit_reporter&.enabled? || false
       end
 
       def accessibility_audit_enabled=(value)
@@ -149,9 +132,9 @@ module CapybaraAccessibilityAudit
       return if audit.passed?
 
       # When assert_no_accessibility_violations is called explicitly, always assert
-      # (ignore the global report mode setting)
+      # (ignore the global reporter setting)
       # This ensures manual assertions always fail tests, even if auto-audits are disabled
-      failure_message = ReportMode::Assert.new.handle_violations(
+      failure_message = Reporter::Assert.new.handle_violations(
         audit: audit,
         url: page.current_url
       )
@@ -159,8 +142,8 @@ module CapybaraAccessibilityAudit
       assert false, failure_message
     end
 
-    # Used by Auditor for automatic audits - respects the report mode setting
-    def audit_with_report_mode(**options)
+    # Used by Auditor for automatic audits - respects the reporter setting
+    def audit_with_reporter(**options)
       options.assert_valid_keys(
         :according_to,
         :checking,
@@ -180,13 +163,13 @@ module CapybaraAccessibilityAudit
       # If audit passed, nothing to do
       return if audit.passed?
 
-      # Use the configured report mode for automatic audits
-      failure_message = accessibility_audit_report_mode.handle_violations(
+      # Use the configured reporter for automatic audits
+      failure_message = accessibility_audit_reporter.handle_violations(
         audit: audit,
         url: page.current_url
       )
 
-      # Only assert if we're in assert mode (failure_message will be nil for report modes)
+      # Only assert if we're in assert mode (failure_message will be nil for reporting modes)
       assert false, failure_message if failure_message
     end
   end

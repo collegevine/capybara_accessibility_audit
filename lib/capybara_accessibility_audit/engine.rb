@@ -8,7 +8,7 @@ module CapybaraAccessibilityAudit
       click_link_or_button
       click_on
     ]
-    # audit_enabled accepts: false (disabled), true (assert mode), :assert, :stdout, or { file: 'path' }
+    # audit_enabled accepts: false (disabled), true (assert mode), or Reporter instances
     config.capybara_accessibility_audit.audit_enabled = true
 
     # Minitest
@@ -42,17 +42,23 @@ module CapybaraAccessibilityAudit
           config.before(type: :feature, &configure)
 
           config.after(:suite) do
-            Reporter.report!
+            CapybaraAccessibilityAudit::Reporter.finalize_current!
           end
         end
       end
     end
 
-    # Minitest
-    config.after_initialize do
+    # Minitest after_run hook
+    config.after_initialize do |app|
       if defined?(Minitest)
+        # Configure reporter for Minitest
+        reporter = CapybaraAccessibilityAudit::Reporter.from_config(
+          app.config.capybara_accessibility_audit.audit_enabled
+        )
+        CapybaraAccessibilityAudit::Reporter.current = reporter
+
         Minitest.after_run do
-          Reporter.report!
+          CapybaraAccessibilityAudit::Reporter.finalize_current!
         end
       end
     end

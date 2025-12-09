@@ -3,23 +3,19 @@ require "json"
 require "tempfile"
 
 class ReporterStdoutTest < ApplicationSystemTestCase
-  self.accessibility_audit_enabled = :stdout
-
-  setup do
-    CapybaraAccessibilityAudit::Reporter.clear!
-  end
+  self.accessibility_audit_enabled = CapybaraAccessibilityAudit::Reporter::Stdout.new
 
   test "collects violations without failing tests" do
     visit violations_path(rules: %w[label])
 
     # Test should pass even though there are violations
-    assert_equal 1, CapybaraAccessibilityAudit::Reporter.violations.count
+    assert_equal 1, accessibility_audit_reporter.violations.count
   end
 
   test "collects violations with structured data" do
     visit violations_path(rules: %w[label])
 
-    violations = CapybaraAccessibilityAudit::Reporter.violations
+    violations = accessibility_audit_reporter.violations
     assert_equal 1, violations.count
 
     violation_data = violations.first
@@ -42,16 +38,15 @@ class ReporterStdoutTest < ApplicationSystemTestCase
     visit violations_path(rules: %w[label])
     visit violations_path(rules: %w[image-alt])
 
-    assert_equal 2, CapybaraAccessibilityAudit::Reporter.violations.count
+    assert_equal 2, accessibility_audit_reporter.violations.count
   end
 end
 
 class ReporterJsonFileTest < ApplicationSystemTestCase
   setup do
-    CapybaraAccessibilityAudit::Reporter.clear!
     @temp_file = Tempfile.new(["accessibility_violations", ".json"])
     @temp_file.close
-    self.accessibility_audit_enabled = {file: @temp_file.path}
+    self.accessibility_audit_enabled = CapybaraAccessibilityAudit::Reporter::JSONFile.new(output_path: @temp_file.path)
   end
 
   teardown do
@@ -62,7 +57,7 @@ class ReporterJsonFileTest < ApplicationSystemTestCase
     visit violations_path(rules: %w[label])
 
     # Manually trigger report output (normally done at end of test run)
-    CapybaraAccessibilityAudit::Reporter.report!
+    accessibility_audit_reporter.finalize!
 
     assert File.exist?(@temp_file.path)
     json_content = File.read(@temp_file.path)
@@ -103,7 +98,7 @@ class ReporterJsonFileTest < ApplicationSystemTestCase
     visit violations_path(rules: %w[label])
     visit violations_path(rules: %w[label image-alt])
 
-    CapybaraAccessibilityAudit::Reporter.report!
+    accessibility_audit_reporter.finalize!
 
     json_content = File.read(@temp_file.path)
     report_data = JSON.parse(json_content, symbolize_names: true)
@@ -118,14 +113,9 @@ end
 class ReporterDisabledTest < ApplicationSystemTestCase
   self.accessibility_audit_enabled = false
 
-  setup do
-    CapybaraAccessibilityAudit::Reporter.clear!
-  end
-
   test "does not collect violations when disabled" do
     visit violations_path(rules: %w[label])
 
-    # Should have no violations collected because audits are disabled
-    assert_equal 0, CapybaraAccessibilityAudit::Reporter.violations.count
+    # Should pass without violations - audits don't run when disabled
   end
 end

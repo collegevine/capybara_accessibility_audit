@@ -7,7 +7,6 @@ class ReporterGoldenTest < ApplicationSystemTestCase
   GOLDEN_FILE_EMPTY = File.join(__dir__, "..", "fixtures", "golden_report_empty.json")
 
   setup do
-    CapybaraAccessibilityAudit::Reporter.clear!
     @temp_file = Tempfile.new(["accessibility_violations", ".json"])
     @temp_file.close
     self.accessibility_audit_enabled = {file: @temp_file.path}
@@ -20,7 +19,7 @@ class ReporterGoldenTest < ApplicationSystemTestCase
   test "JSON output matches golden file structure" do
     visit violations_path(rules: %w[label])
 
-    CapybaraAccessibilityAudit::Reporter.report!
+    accessibility_audit_reporter.finalize!
 
     actual_json = File.read(@temp_file.path)
     actual_data = JSON.parse(actual_json, symbolize_names: true)
@@ -46,7 +45,7 @@ class ReporterGoldenTest < ApplicationSystemTestCase
   test "JSON output with no violations matches empty golden file" do
     visit violations_path
 
-    CapybaraAccessibilityAudit::Reporter.report!
+    accessibility_audit_reporter.finalize!
 
     assert File.exist?(@temp_file.path), "Report file should exist"
     assert File.size(@temp_file.path) > 0, "Report file should not be empty"
