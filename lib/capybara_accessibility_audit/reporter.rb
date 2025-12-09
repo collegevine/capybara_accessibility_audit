@@ -299,7 +299,7 @@ module CapybaraAccessibilityAudit
           puts "   Violations: #{page_data[:violations].count}"
 
           page_data[:violations].each do |violation|
-            puts "\n   - [#{violation[:impact].upcase}] #{violation[:id]}"
+            puts "\n   - #{violation[:id]}: (#{violation[:impact].upcase})"
             puts "     #{violation[:help]}"
             puts "     #{violation[:helpUrl]}"
             puts "     Affected elements: #{violation[:nodes].count}"
