@@ -13,8 +13,6 @@ module CapybaraAccessibilityAudit
     end
 
     def audit(**options)
-      install
-
       results = run(options)
 
       @reporter.report Axe::API::Results.new(results)
@@ -40,8 +38,13 @@ module CapybaraAccessibilityAudit
       context_hash = context.to_h.as_json
       options_hash = options.to_h.as_json
 
-      page.evaluate_async_script <<~JS, context_hash, options_hash
-        const [ context, options, callback ] = arguments
+      # Install axe and run in a single atomic script
+      page.evaluate_async_script <<~JS, self.class.source, context_hash, options_hash
+        const [ source, context, options, callback ] = arguments
+
+        if (typeof axe === "undefined" || typeof axe.run !== "function") {
+          eval(source)
+        }
 
         axe.run(context, options).then(callback)
       JS
@@ -61,14 +64,5 @@ module CapybaraAccessibilityAudit
       [context, options]
     end
 
-    def install
-      page.execute_script(self.class.source) unless installed?
-    end
-
-    def installed?
-      page.evaluate_script <<~JS
-        "axe" in window && typeof axe.run === "function"
-      JS
-    end
   end
 end
