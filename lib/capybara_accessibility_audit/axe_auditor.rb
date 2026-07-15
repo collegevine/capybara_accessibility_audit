@@ -1,3 +1,5 @@
+require "json"
+
 require "axe/api/context"
 require "axe/api/options"
 require "axe/api/results"
@@ -38,15 +40,21 @@ module CapybaraAccessibilityAudit
       context_hash = context.to_h.as_json
       options_hash = options.to_h.as_json
 
-      # Install axe and run in a single atomic script
-      page.evaluate_async_script <<~JS, self.class.source, context_hash, options_hash
+      # Install axe and run in a single atomic script.
+      #
+      # The results are serialized to JSON inside the browser: returning the
+      # raw results object hands the Playwright driver a JSHandle, which it
+      # deep-walks with one protocol round trip per nested value. On
+      # violation-heavy pages that is tens of thousands of round trips, hours
+      # of wall clock, and an effective hang. One string = one round trip.
+      JSON.parse(page.evaluate_async_script(<<~JS, self.class.source, context_hash, options_hash))
         const [ source, context, options, callback ] = arguments
 
         if (typeof axe === "undefined" || typeof axe.run !== "function") {
           eval(source)
         }
 
-        axe.run(context, options).then(callback)
+        axe.run(context, options).then(results => callback(JSON.stringify(results)))
       JS
     end
 
